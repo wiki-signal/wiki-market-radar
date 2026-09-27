@@ -2,7 +2,6 @@ from urllib.parse import quote
 
 import requests
 
-
 BASE_URL = "https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article"
 
 HEADERS = {

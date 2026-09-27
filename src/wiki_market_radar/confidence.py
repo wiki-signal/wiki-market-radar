@@ -37,15 +37,20 @@ def assess_trend(metrics: dict) -> dict:
         reasons.append("multiple outlier months")
 
     # Does month-to-month behavior support the overall trend?
-    if trend == "Growing" and positive_months >= 55:
-        score += 1
-    elif trend == "Declining" and positive_months <= 45:
-        score += 1
-    elif trend == "Stable" and 40 <= positive_months <= 60:
+    trend_supported = (
+        (trend == "Growing" and positive_months >= 55)
+        or (trend == "Declining" and positive_months <= 45)
+        or (trend == "Stable" and 40 <= positive_months <= 60)
+    )
+
+    if trend_supported:
         score += 1
     else:
-        reasons.append("monthly direction does not strongly support the trend")
+        reasons.append(
+            "monthly direction does not strongly support the trend"
+        )
 
+    # Confidence classification
     if score >= 4:
         confidence = "High"
     elif score >= 2:
@@ -54,7 +59,9 @@ def assess_trend(metrics: dict) -> dict:
         confidence = "Low"
 
     if not reasons:
-        reasons.append("signal is consistent and relatively stable")
+        reasons.append(
+            "signal is consistent and relatively stable"
+        )
 
     return {
         "trend": trend,

@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Upgrade pip
+        run: python -m pip install --upgrade pip
+
+      - name: Install project
+        run: python -m pip install -e .
+
+      - name: Install development tools
+        run: python -m pip install pytest ruff skills-ref
+
+      - name: Lint
+        run: ruff check .
+
+      - name: Run tests
+        run: pytest -v
+
+      - name: Validate Agent Skill
+        run: agentskills validate "$GITHUB_WORKSPACE"
+
+      - name: CLI smoke test
+        run: |
+          python scripts/analyze.py --help
+          python scripts/compare.py --help
+          
