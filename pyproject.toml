@@ -1,0 +1,18 @@
+[project]
+name = "wiki-market-radar"
+version = "0.1.0"
+description = "Agent Skill for analyzing Wikipedia pageview trends and market-interest signals"
+requires-python = ">=3.12"
+
+dependencies = [
+    "requests>=2.32,<3",
+    "pandas>=2.2,<3",
+    "matplotlib>=3.9,<4",
+    "reportlab>=4.2,<5",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8,<9",
+    "ruff>=0.13,<1",
+]
