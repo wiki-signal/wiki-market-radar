@@ -8,7 +8,7 @@ BASE_URL = "https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article"
 HEADERS = {
     "User-Agent": (
         "wiki-market-radar/0.1 "
-        "(https://github.com/TarasDubrova/wiki-market-radar)"
+        "(https://github.com/wiki-signal/wiki-market-radar)"
     )
 }
 
