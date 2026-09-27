@@ -2,571 +2,713 @@
 
 [![CI](https://github.com/wiki-signal/wiki-market-radar/actions/workflows/ci.yml/badge.svg)](https://github.com/wiki-signal/wiki-market-radar/actions/workflows/ci.yml)
 
-An Agent Skill for using Wikipedia pageview history as an early signal of topic interest across language markets.
+**Wiki Market Radar** is an Agent Skill for analyzing Wikipedia pageview history as an early signal of topic interest across language editions.
 
-The intended user is a B2C product team asking questions such as:
+It is designed for B2C product exploration: comparing topics or language audiences, identifying whether interest is growing or declining, estimating how reliable the observed trend is, and producing a concise shareable report.
 
-- Is interest in a topic growing or declining?
-- Is the observed trend stable enough to take seriously?
-- How does the same topic behave across language editions?
-- Which markets are worth researching further?
+The core principle is simple:
 
-The project deliberately treats Wikipedia traffic as an **information-interest signal**, not as evidence of purchase intent or market size.
+> **The LLM understands the request and explains the result. Python retrieves the data, calculates the metrics, classifies the trend, and generates the artifacts.**
+
+Wikipedia pageviews are used as an **information-interest signal**, not as proof of purchase intent, market size, revenue potential, or willingness to pay.
 
 ---
 
 ## At a Glance
 
-| | |
+| Capability | Implementation |
 | --- | --- |
-| **Input** | Natural-language research question or explicit CLI parameters |
-| **Primary data source** | Wikimedia Pageviews API |
-| **Core analysis** | Deterministic Python |
-| **Agent interface** | `SKILL.md` |
-| **Main metrics** | Growth, YoY growth, volatility, positive months, outliers |
-| **Assessment** | Growing / Stable / Declining + High / Medium / Low confidence |
-| **Outputs** | Structured result, PNG chart, one-page PDF |
-| **Multi-market support** | Yes |
-| **LLM E2E test** | OpenRouter free tool-capable model |
-| **Verification** | Ruff, pytest, Agent Skill validator, GitHub Actions |
+| Natural-language research request | LLM tool calling |
+| Wikipedia data retrieval | Wikimedia Pageviews API |
+| Localized article resolution | MediaWiki API |
+| Monthly aggregation | Python / pandas |
+| Growth and YoY analysis | Deterministic Python |
+| Volatility and outliers | Deterministic Python |
+| Trend classification | Deterministic rules |
+| Confidence assessment | Deterministic rules |
+| Cross-language comparison | Shared analytical pipeline |
+| Visualization | matplotlib |
+| Shareable output | One-page PDF |
+| Cheap-model validation | OpenRouter free model routing |
+| Automated verification | Ruff + pytest + Agent Skills validator + GitHub Actions |
 
 ---
 
-## Example Questions
+## What the User Gets
 
-The Skill is designed for questions like:
+A natural-language request can produce three artifacts:
 
-> Compare interest in astronomy in Polish and Czech Wikipedia during 2024–2025.
-
-> Is interest in astronomy growing in Ukrainian Wikipedia, and how much confidence should we place in that trend?
-
-> Compare interest in learning English across several Wikipedia language editions and identify which audiences may deserve further research.
-
-The topic, language editions, time period, and evaluation criteria are not fixed to these examples.
-
----
-
-## Why This Design
-
-The main design decision is to keep **language reasoning** separate from **numerical analysis**.
-
-| LLM / AI Agent | Python |
-| --- | --- |
-| Understands the user's intent | Retrieves real Wikimedia data |
-| Selects the required workflow | Validates and normalizes inputs |
-| Converts natural language into tool arguments | Aggregates observations |
-| Interprets calculated results | Calculates metrics |
-| Explains assumptions and limitations | Classifies trend and confidence |
-
-The LLM is therefore not responsible for calculating growth percentages or inventing pageview values.
-
-For the same analytical inputs, the Python layer produces the same calculations.
-
----
-
-## Requirement Coverage
-
-The implementation maps directly to the main requirements of the task.
-
-| Requirement | Implementation |
-| --- | --- |
-| Agent Skill | `SKILL.md` |
-| Own executable data logic | `src/wiki_market_radar/` |
-| Wikipedia pageview analysis | `wikimedia_client.py` + processing pipeline |
-| Trend analysis | `analytics.py` |
-| Reliability / confidence | `confidence.py` |
-| Language-market comparison | `comparison.py` |
-| Charts | `visualization.py` |
-| Short shareable report | `reporting.py` |
-| Single-market workflow | `scripts/analyze.py` |
-| Multi-market workflow | `scripts/compare.py` |
-| Full LLM tool-calling scenario | `scripts/llm_e2e_test.py` |
-| Automated verification | pytest + Ruff + GitHub Actions |
-| Agent Skills validation | reference validator |
-
----
-
-## Quick Start
-
-Python 3.12+ is recommended.
-
-### Install
-
-```bash
-python -m pip install -e .
+```text
+outputs/
+└── llm_e2e/
+    └── <run_id>/
+        ├── comparison_trend.png
+        ├── comparison_report.pdf
+        └── final_answer.md
 ```
 
-For development dependencies:
+The one-page comparison report combines:
 
-```bash
+- a compact table with the calculated metrics;
+- a shared trend chart for the selected Wikipedia editions;
+- a short analytical summary;
+- a clear limitation statement.
+
+The table is the detailed quantitative layer, the chart shows the observed trajectory, and the analytical summary explains the most important differences without repeating the full table.
+
+---
+
+## How the Result Is Produced
+
+The final result is based on real Wikimedia data and a deterministic analytical pipeline.
+
+```text
+Natural-language request
+        ↓
+LLM interprets topic, languages, period and criteria
+        ↓
+LLM calls the analytical tool
+        ↓
+Localized Wikipedia articles are resolved and verified
+        ↓
+Wikimedia Pageviews API returns raw pageview history
+        ↓
+Python aggregates observations by month
+        ↓
+Python calculates metrics
+        ↓
+Python determines Trend and Confidence
+        ↓
+Markets / language editions are compared
+        ↓
+Python generates the comparison chart
+        ↓
+LLM explains the deterministic result
+        ↓
+One-page PDF + PNG + Markdown summary
+```
+
+The LLM is **not** responsible for calculating growth, volatility, confidence, or other numerical metrics.
+
+This boundary is intentional: it reduces arithmetic hallucinations and makes the Skill suitable for fast, inexpensive tool-capable models.
+
+---
+
+# Quick Start
+
+## 1. Create and activate a virtual environment
+
+Windows PowerShell:
+
+```powershell
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+```
+
+## 2. Install the project
+
+```powershell
 python -m pip install -e ".[dev]"
 ```
 
-### Run a single-market analysis
+## 3. Run the deterministic tests
 
-```bash
-python scripts/analyze.py --project uk.wikipedia.org --article "Астрономія" --language "Ukrainian" --start 2024010100 --end 2025123100 --output-dir output/astronomy
+```powershell
+ruff check .
+pytest -v
+agentskills validate .
 ```
-
-The workflow produces:
-
-- calculated metrics;
-- trend classification;
-- confidence assessment;
-- a PNG trend chart;
-- a one-page PDF report.
-
-### Compare language markets
-
-```bash
-python scripts/compare.py --market "Polish|pl.wikipedia.org|Astronomia" --market "Czech|cs.wikipedia.org|Astronomie" --start 2024010100 --end 2025123100
-```
-
-Both markets pass through the same analytical pipeline, so their metrics are calculated consistently.
 
 ---
 
-## How It Works
+# Natural-Language End-to-End Demo
+
+The full E2E workflow uses OpenRouter to test how a low-cost model follows the Agent Skill and calls the deterministic analytical code.
+
+Set the API key:
+
+```powershell
+$env:OPENROUTER_API_KEY="your-key"
+```
+
+Run the built-in demonstration:
+
+```powershell
+python scripts/llm_e2e_test.py
+```
+
+Or provide your own natural-language request:
+
+```powershell
+python scripts/llm_e2e_test.py --request "Compare interest in cybersecurity in Polish, German and English Wikipedia for 2024–2025. I care most about stability of the signal."
+```
+
+The request may change:
+
+- topic;
+- language editions;
+- analysis period;
+- comparison set;
+- evaluation criterion.
+
+The E2E runner converts the natural-language request into structured tool arguments and then executes the same deterministic Python pipeline used by the project.
+
+Each run creates a separate output directory:
 
 ```text
-User question
-      ↓
-AI Agent / LLM
-      ↓
-SKILL.md
-      ↓
-structured tool arguments
-      ↓
-Python workflow
-      ↓
-Wikimedia API
-      ↓
-daily pageviews
-      ↓
-monthly aggregation
-      ↓
-metrics
-      ↓
-trend + confidence
-      ↓
-chart / report / structured result
-      ↓
-LLM interpretation
-      ↓
-user-facing answer
+outputs/llm_e2e/<run_id>/
 ```
 
-`SKILL.md` defines when the Skill should be used and how the agent should approach the task.
-
-The Python package handles the part that should be reproducible: fetching data, processing it, calculating metrics, and assessing signal quality.
+This prevents one report from overwriting another and makes runs easier to inspect.
 
 ---
 
-## Project Structure
+# Example Questions
+
+The Skill is not limited to a predefined topic.
+
+Examples:
+
+> Compare the growth of interest in intermittent fasting in Polish and Czech Wikipedia over the last two years.
+
+> We are considering an astronomy course. Is interest in astronomy growing in Ukrainian Wikipedia, and how reliable is the trend?
+
+> Compare interest in cybersecurity in Polish, German and English Wikipedia for 2024–2025. Prioritize stability.
+
+> Compare electric-vehicle interest across German, French and Spanish Wikipedia and identify which signals deserve further validation.
+
+The topic itself is not hardcoded into the analytical core.
+
+---
+
+# User-Defined Evaluation Criteria
+
+Users may define what matters most for their decision.
+
+For example:
+
+| User criterion | Primary analytical signal |
+| --- | --- |
+| Highest absolute attention | Average monthly views |
+| Strongest growth | Period change |
+| Strongest recent movement | YoY change |
+| Most stable signal | Monthly volatility + Confidence |
+| Most reliable trend | Confidence |
+| Consistent direction | Trend + positive-month share |
+
+The Skill does not silently replace the user's criterion with another one.
+
+If a requested criterion cannot be evaluated from Wikipedia pageviews, the Skill should say so and identify what additional evidence would be required.
+
+---
+
+# Architecture
+
+```text
+                    USER / HOST AGENT
+                           │
+                           ▼
+                       SKILL.md
+                           │
+              ┌────────────┴────────────┐
+              │                         │
+              ▼                         ▼
+       Natural-language            Direct CLI
+        E2E workflow                 workflows
+              │                         │
+              ▼                         │
+   scripts/llm_e2e_test.py              │
+              │                         │
+              └────────────┬────────────┘
+                           ▼
+              src/wiki_market_radar/
+                           │
+             ┌─────────────┼─────────────┐
+             ▼             ▼             ▼
+       Wikimedia       Analytics      Confidence
+         APIs             │              │
+                           └──────┬───────┘
+                                  ▼
+                              Comparison
+                                  │
+                         ┌────────┴────────┐
+                         ▼                 ▼
+                    Visualization       Reporting
+                         │                 │
+                         ▼                 ▼
+                        PNG              PDF
+```
+
+---
+
+# Why This Design
+
+The project separates probabilistic language reasoning from deterministic data processing.
+
+| LLM / Agent | Python |
+| --- | --- |
+| Understand the request | Retrieve Wikimedia data |
+| Identify topic and languages | Aggregate monthly data |
+| Propose localized article titles | Calculate metrics |
+| Detect user criteria | Classify Trend |
+| Call the analytical workflow | Calculate Confidence |
+| Explain the result | Compare markets |
+| Suggest the next validation step | Generate charts and reports |
+
+This makes the system easier to test and reduces dependence on model quality.
+
+A cheaper model does not need to perform statistical calculations correctly. It only needs to understand the request, construct the tool call, and explain already-calculated results.
+
+---
+
+# Article Resolution
+
+The same concept may have different article titles in different Wikipedia editions.
+
+The E2E workflow therefore:
+
+1. asks the LLM for a localized candidate article;
+2. verifies that the article exists through the MediaWiki API;
+3. follows redirects when applicable;
+4. falls back to Wikipedia search if the proposed title does not exist;
+5. analyzes the resolved real article.
+
+The prompt instructs the model to select the **general encyclopedic article that directly represents the requested concept**, rather than an unrelated company, brand, product, person, or narrow example.
+
+The direct CLI workflows expect an explicit article title.
+
+---
+
+# Deterministic CLI Workflows
+
+## Single-market analysis
+
+```powershell
+python scripts/analyze.py `
+  --project uk.wikipedia.org `
+  --article "Штучний інтелект" `
+  --language "Ukrainian" `
+  --start 2024010100 `
+  --end 2025123100 `
+  --output-dir outputs/ai_uk
+```
+
+The single-market workflow can generate:
+
+- calculated metrics;
+- Trend;
+- Confidence;
+- monthly chart;
+- one-page PDF.
+
+## Multi-market comparison
+
+```powershell
+python scripts/compare.py `
+  --market "Polish|pl.wikipedia.org|Sztuczna inteligencja" `
+  --market "Czech|cs.wikipedia.org|Umělá inteligence" `
+  --market "Ukrainian|uk.wikipedia.org|Штучний інтелект" `
+  --start 2024010100 `
+  --end 2025123100
+```
+
+These workflows are useful for validating the analytical core without involving an external LLM.
+
+---
+
+# Metrics
+
+## Average Monthly Views
+
+`avg_monthly_views`
+
+Average number of pageviews per month during the selected period.
+
+This represents absolute information attention inside the selected Wikipedia edition.
+
+It is **not** interpreted as market size.
+
+---
+
+## Period Change
+
+Internal field:
+
+```text
+period_growth_pct
+```
+
+The metric compares the average level near the beginning of the selected period with the average level near the end.
+
+The implementation uses up to the first three and final three months to reduce sensitivity to a single month.
+
+Interpretation:
+
+- positive → interest increased across the period;
+- negative → interest decreased;
+- near zero → broadly stable.
+
+The report uses the neutral user-facing label **Period change** because the result may be either positive or negative.
+
+---
+
+## Year-over-Year Change
+
+Internal field:
+
+```text
+year_over_year_growth_pct
+```
+
+Compares the most recent month with the same month one year earlier.
+
+If insufficient history is available, YoY is reported as unavailable.
+
+Period change and YoY are separate metrics and must not be mixed.
+
+---
+
+## Monthly Volatility
+
+`monthly_volatility_pct`
+
+Calculated from month-to-month percentage changes.
+
+Higher volatility means the observed signal changes more sharply between months.
+
+Lower volatility indicates a more consistent signal.
+
+---
+
+## Positive Months
+
+`positive_months_pct`
+
+Percentage of month-to-month changes that were positive.
+
+This supports the Trend classification by showing how consistently the series moved in the same direction.
+
+---
+
+## Outlier Months
+
+`outlier_months_count`
+
+Outliers are detected using the interquartile-range rule.
+
+They help identify whether a trend may be distorted by unusual spikes or drops.
+
+---
+
+# Trend Classification
+
+Trend is deterministic:
+
+```text
+Growing
+Stable
+Declining
+```
+
+Current thresholds:
+
+```text
+Period change > +10%  → Growing
+Period change < -10%  → Declining
+otherwise             → Stable
+```
+
+A language edition can have high absolute attention while still having a declining trend.
+
+Absolute level and direction are intentionally treated as separate concepts.
+
+---
+
+# Confidence
+
+Confidence describes **signal quality**, not commercial attractiveness and not the LLM's subjective confidence.
+
+Supported values:
+
+```text
+High
+Medium
+Low
+```
+
+The deterministic score considers:
+
+- length of historical data;
+- monthly volatility;
+- number of outlier months;
+- consistency between monthly direction and the classified Trend.
+
+This allows the report to distinguish between a strong trend signal and a noisy or weakly supported one.
+
+---
+
+# One-Page Report
+
+The comparison PDF is intentionally compact.
+
+It contains:
+
+```text
+Title
+  ↓
+Comparison table
+  ↓
+Trend chart + Analytical summary
+  ↓
+Limitation
+```
+
+The table provides the detailed metrics.
+
+The chart shows the time-series behavior.
+
+The summary is kept to one short paragraph and focuses on the main analytical differences and the user's evaluation criterion.
+
+The report avoids repeating the full table in prose.
+
+---
+
+# Follow-Up Requests
+
+The Python analytical layer is stateless.
+
+Conversation state belongs to the host agent.
+
+For example, after an initial request the user may say:
+
+```text
+Now use Germany instead of Poland.
+```
+
+or:
+
+```text
+Use only the last 12 months.
+```
+
+or:
+
+```text
+Prioritize stability instead of growth.
+```
+
+The agent should preserve unchanged assumptions and rerun the affected analysis with the updated parameters.
+
+Previously calculated numerical values should not be manually edited.
+
+---
+
+# Project Structure
 
 ```text
 wiki-market-radar/
-├── .github/
-│   └── workflows/
-│       └── ci.yml
+│
+├── SKILL.md
+├── README.md
+├── pyproject.toml
+│
+├── src/
+│   └── wiki_market_radar/
+│       ├── __init__.py
+│       ├── wikimedia_client.py
+│       ├── data_processing.py
+│       ├── analytics.py
+│       ├── confidence.py
+│       ├── comparison.py
+│       ├── visualization.py
+│       └── reporting.py
 │
 ├── scripts/
 │   ├── analyze.py
 │   ├── compare.py
 │   └── llm_e2e_test.py
 │
-├── src/
-│   └── wiki_market_radar/
-│       ├── analytics.py
-│       ├── comparison.py
-│       ├── confidence.py
-│       ├── data_processing.py
-│       ├── reporting.py
-│       ├── visualization.py
-│       └── wikimedia_client.py
-│
 ├── tests/
 │   └── test_core.py
 │
-├── .gitignore
-├── pyproject.toml
-├── README.md
-└── SKILL.md
+├── examples/
+│   └── sample_case/
+│
+└── .github/
+    └── workflows/
+        └── ci.yml
 ```
 
-### Component Responsibilities
+---
+
+# Component Responsibilities
 
 | Component | Responsibility |
 | --- | --- |
-| `SKILL.md` | Instructions and usage contract for the agent |
-| `wikimedia_client.py` | Wikimedia Pageviews API communication |
-| `data_processing.py` | Pageview preparation and monthly aggregation |
-| `analytics.py` | Quantitative metric calculation |
-| `confidence.py` | Trend classification and confidence assessment |
-| `comparison.py` | Comparable multi-market results |
-| `visualization.py` | Trend-chart generation |
+| `SKILL.md` | Agent behavior, workflow, interpretation rules and limitations |
+| `wikimedia_client.py` | Wikimedia Pageviews API |
+| `data_processing.py` | Prepare and aggregate pageview observations |
+| `analytics.py` | Deterministic metric calculations |
+| `confidence.py` | Trend and Confidence rules |
+| `comparison.py` | Cross-language comparison |
+| `visualization.py` | Single-market and comparison charts |
 | `reporting.py` | One-page PDF generation |
-| `analyze.py` | Direct single-market workflow |
-| `compare.py` | Direct multi-market workflow |
-| `llm_e2e_test.py` | LLM → tool → Python → LLM integration test |
-| `test_core.py` | Deterministic core tests |
-| `ci.yml` | Automated repository checks |
+| `analyze.py` | Single-market deterministic CLI |
+| `compare.py` | Multi-market deterministic CLI |
+| `llm_e2e_test.py` | Full natural-language / tool-calling validation |
+| `test_core.py` | Core deterministic tests |
+| `ci.yml` | Automated repository verification |
 
 ---
 
-## Metrics
+# Requirement Coverage
 
-The metrics are intentionally simple enough to explain and audit.
-
-| Metric | What it answers | Calculation |
-| --- | --- | --- |
-| **Average monthly views** | What is the typical traffic level? | Mean monthly pageviews |
-| **Period growth** | Has interest changed over the period? | First analysis window vs final analysis window |
-| **YoY growth** | How does the latest month compare with a year earlier? | Latest month vs same month previous year |
-| **Monthly volatility** | How unstable is the signal? | Standard deviation of monthly percentage changes |
-| **Positive months** | How consistently does traffic move upward? | Share of month-to-month increases |
-| **Outlier months** | Are unusual months influencing the series? | IQR-based detection |
-
-### Period Growth
-
-Rather than comparing two individual dates, the implementation compares short averaged windows.
-
-By default, it uses up to the first three and last three months:
-
-```text
-(last window average / first window average - 1) × 100
-```
-
-This makes the metric less sensitive to a single endpoint spike.
-
-### Year-over-Year Growth
-
-```text
-(latest month / same month previous year - 1) × 100
-```
-
-YoY is returned only when enough historical data exists.
-
-### Outliers
-
-Unusual months are identified using the interquartile range (IQR).
-
-They are not automatically removed. A spike can contain useful information — for example, a news event or sudden public attention — but it should also reduce confidence in a supposedly stable trend.
-
----
-
-## Trend Classification
-
-Trend direction is deliberately rule-based:
-
-```text
-Period growth > +10%  → Growing
-Period growth < -10%  → Declining
-Otherwise             → Stable
-```
-
-The thresholds are explicit rather than hidden inside an LLM prompt.
-
-That makes the classification easy to inspect, test, and change.
-
----
-
-## Confidence
-
-`Confidence` is **not the language model saying how confident it feels**.
-
-It is a deterministic assessment of signal quality.
-
-Four checks are used:
-
-| Check | Question |
+| Task requirement | Implementation |
 | --- | --- |
-| Historical coverage | Is there enough history? |
-| Volatility | Is the month-to-month signal reasonably stable? |
-| Outliers | Is the result dominated by unusual months? |
-| Directional consistency | Do monthly changes support the overall trend? |
-
-Current scoring:
-
-| Supporting checks | Confidence |
-| ---: | --- |
-| 4 | High |
-| 2–3 | Medium |
-| 0–1 | Low |
-
-This keeps two concepts separate:
-
-**Trend** answers:
-
-> In which direction is interest moving?
-
-**Confidence** answers:
-
-> How well does the observed data support that classification?
+| Agent Skill format | `SKILL.md` |
+| Own meaningful data-processing code | `src/wiki_market_radar/` |
+| Wikipedia pageview analysis | `wikimedia_client.py` + analytics pipeline |
+| Arbitrary topics and languages | Natural-language tool workflow + parameterized CLI |
+| Charts | `visualization.py` |
+| Short shareable report | `reporting.py` |
+| One-page PDF | Comparison and single-market reporting |
+| Explicit assumptions and limitations | `SKILL.md` + PDF limitation |
+| User-defined prospectiveness criteria | Skill criteria mapping |
+| Follow-up requests | Re-run affected analysis with updated inputs |
+| Fast / inexpensive LLM validation | OpenRouter E2E workflow |
+| Reproducible dependencies | `pyproject.toml` |
+| Automated checks | Ruff + pytest + Agent Skills validator + GitHub Actions |
 
 ---
 
-## Charts and Reports
+# Verification
 
-A single-market run can generate a trend chart containing:
+Local verification:
 
-- monthly pageviews;
-- a three-month moving average.
-
-The moving average is included to make the underlying direction easier to see when individual months are noisy.
-
-The PDF report combines:
-
-- topic and language;
-- key metrics;
-- trend;
-- confidence;
-- confidence reason;
-- chart;
-- the main interpretation limitation.
-
-The goal is a short research artifact that can be shared without requiring access to the code.
-
----
-
-## Agent and LLM Flow
-
-The intended user interface is natural language.
-
-A user does **not** need to provide Wikimedia API paths or know the internal metric names.
-
-The agent:
-
-1. reads the user request;
-2. uses `SKILL.md` to select the workflow;
-3. creates structured tool parameters;
-4. receives deterministic results from Python;
-5. explains those results in the context of the original question.
-
-The analytical code remains independent of the wording used by the user.
-
----
-
-## LLM End-to-End Test
-
-The project includes a separate end-to-end harness:
-
-```text
-scripts/llm_e2e_test.py
+```powershell
+ruff check .
+pytest -v
+agentskills validate .
 ```
 
-It tests the full agent loop rather than only isolated Python functions:
+The test suite covers the deterministic core, including:
 
 ```text
-Natural-language request
-        ↓
-LLM
-        ↓
-tool call
-        ↓
-validated parameters
-        ↓
-real Wikimedia request
-        ↓
-Python analysis
-        ↓
-tool result
-        ↓
-LLM
-        ↓
-final explanation
+prepare + aggregate pageviews
+metric calculation
+trend / confidence assessment
+market comparison
 ```
 
-The test uses:
+GitHub Actions repeats the repository checks on pushes.
+
+The LLM E2E workflow is intentionally manual because it depends on an external OpenRouter API key and free-model availability.
+
+---
+
+# LLM End-to-End Validation
+
+The E2E scenario validates the full chain:
+
+```text
+User request
+→ Skill instructions
+→ LLM tool call
+→ article resolution
+→ Wikimedia data
+→ deterministic analytics
+→ comparison
+→ LLM interpretation
+→ chart
+→ one-page PDF
+```
+
+The model is configured as:
 
 ```text
 openrouter/free
 ```
 
-through OpenRouter.
+OpenRouter may route the request to different available free models.
 
-The free router can select an available free model that supports the features required by the request, including tool calling. The exact underlying model may therefore vary between runs.
+The script prints the actual model used during each run.
 
-### Run
-
-Set the API key through the environment:
-
-```powershell
-$env:OPENROUTER_API_KEY="your-key"
-```
-
-Then:
-
-```bash
-python scripts/llm_e2e_test.py
-```
-
-A successful run shows:
+The API key is read from:
 
 ```text
-MODEL USED
-LLM TOOL ARGUMENTS
-TOOL RESULT
-LLM FINAL ANSWER
+OPENROUTER_API_KEY
 ```
 
-No OpenRouter credential is stored in the repository.
-
-### Article Resolution in the E2E Scenario
-
-The model proposes an article title for each requested Wikipedia edition.
-
-Before pageview analysis, the E2E workflow checks the candidate against the MediaWiki API and can resolve a valid article title.
-
-The direct CLI workflows remain intentionally simpler: they expect an explicit Wikipedia article title.
-
-This distinction keeps the analytical core deterministic while allowing the agent-facing scenario to work with natural-language topics.
+and is not stored in source code.
 
 ---
 
-## Follow-up Requests
+# AI-Assisted Development
 
-The analytical functions are stateless.
-
-A user can change:
-
-- topic;
-- language editions;
-- date range;
-- comparison set;
-- assumptions.
-
-The agent can then call the same workflow again with the updated parameters.
-
-Conversation history itself belongs to the host AI agent rather than to the Python package. The package focuses on producing reproducible analysis for each requested set of inputs.
-
----
-
-## Verification
-
-The implementation is checked at several levels.
-
-### Code quality
-
-```bash
-ruff check .
-```
-
-### Deterministic tests
-
-```bash
-pytest -v
-```
-
-The current tests cover:
-
-- data preparation and monthly aggregation;
-- metric calculation;
-- trend and confidence assessment;
-- market comparison.
-
-### Agent Skill format
-
-The Skill can be checked with the Agent Skills reference validator:
-
-```bash
-agentskills validate /absolute/path/to/wiki-market-radar
-```
-
-### Real integrations
-
-Development also included:
-
-- real Wikimedia API requests;
-- generated chart inspection;
-- generated PDF inspection;
-- a live LLM tool-calling run through OpenRouter.
-
-### Continuous Integration
-
-GitHub Actions repeats the deterministic checks after pushes to the repository.
-
-The LLM E2E test is kept outside CI because it depends on an external model provider, credentials, and current free-model availability.
-
----
-
-## Engineering Decisions
-
-A few choices were deliberately kept simple for this version.
-
-| Decision | Reason |
-| --- | --- |
-| Monthly rather than daily trend analysis | Reduces day-to-day noise |
-| Short averaged growth windows | Less sensitive to a single endpoint |
-| Explicit trend thresholds | Easy to audit and change |
-| Separate trend and confidence | Direction and signal quality are different questions |
-| Python for calculations | Reproducible results instead of LLM arithmetic |
-| LLM for orchestration and interpretation | Natural-language flexibility where it is useful |
-| No database in the MVP | Current workflows do not require persistent state |
-| No asynchronous pipeline yet | Current comparison scale does not justify the added complexity |
-
-The intent was to solve the analytical problem first and avoid infrastructure that did not improve the requested workflow.
-
----
-
-## AI-Assisted Development
-
-AI tools were used during development for:
+AI tools were used during implementation for tasks such as:
 
 - discussing architecture;
-- explaining unfamiliar concepts;
-- implementation suggestions;
-- debugging;
-- reviewing code;
+- drafting code;
 - identifying edge cases;
-- improving documentation.
+- improving prompts and documentation;
+- reviewing implementation decisions.
 
-AI suggestions were not treated as authoritative output.
+AI-generated work was not accepted purely on model output.
 
-They were checked through a combination of:
+It was checked through:
 
-```text
-code inspection
-+ Ruff
-+ deterministic tests
-+ Agent Skill validation
-+ real Wikimedia requests
-+ manual artifact inspection
-+ LLM end-to-end testing
-```
+- deterministic unit tests;
+- Ruff static checks;
+- Agent Skills validation;
+- real Wikimedia API runs;
+- manual inspection of calculated metrics;
+- manual inspection of generated charts and PDFs;
+- end-to-end testing with an inexpensive tool-capable model;
+- GitHub Actions.
 
-One practical example was Wikimedia API request handling: HTTP failures observed during real execution were investigated and the client behavior was corrected before the integration was considered complete.
-
----
-
-## Limitations
-
-Wikipedia pageviews measure attention to information, not commercial demand.
-
-The main limitations are:
-
-- pageviews do not measure willingness to pay;
-- Wikipedia language editions have different audience sizes;
-- article coverage can differ between languages;
-- semantically similar concepts may not map perfectly to equivalent articles;
-- news and viral events can create temporary spikes;
-- seasonality can influence the observed trend;
-- traffic alone is not sufficient for market-sizing or investment decisions.
-
-For that reason, the output should be used as **one research signal** for deciding what to investigate next, not as a standalone go/no-go decision.
+The goal was to use AI as an implementation assistant while keeping verification deterministic wherever possible.
 
 ---
 
-## Next Iterations
+# Limitations
 
-The next improvements I would prioritize are:
+The current version intentionally has several limitations:
 
-1. move topic/article resolution from the E2E harness into a reusable core component;
-2. improve cross-language concept matching;
-3. add caching for repeated Wikimedia requests;
-4. add stronger seasonality-aware trend estimation;
-5. add comparative charts and multi-market PDF reports;
-6. introduce asynchronous fetching only when the number of markets makes it useful;
-7. combine Wikipedia interest with additional demand signals.
+- Wikipedia pageviews measure information interest rather than commercial demand.
+- Different language editions have different total audience sizes, so raw pageview levels are not directly normalized by Wikipedia-edition size.
+- One article may not fully represent a broad commercial topic.
+- External events may create temporary spikes or drops.
+- Article resolution still depends partly on LLM interpretation in the E2E workflow.
+- Confidence measures the quality of the observed trend signal, not the probability of commercial success.
+- A promising Wikipedia signal should be validated with additional demand or commercial-intent evidence.
 
-For larger research workflows, persistent storage and richer conversational state could be introduced later without changing the current boundary between LLM orchestration and deterministic analysis.
+---
+
+# Possible Next Iterations
+
+The Skill can be extended incrementally with:
+
+- multiple related articles per concept;
+- better semantic entity resolution;
+- normalization across Wikipedia edition sizes;
+- event-spike detection;
+- caching of Wikimedia responses;
+- larger batch comparisons;
+- configurable user-defined scoring;
+- complementary search-demand signals;
+- competitor and app-store data;
+- commercial-intent or conversion data.
+
+The deterministic analytical core should remain separate from the LLM orchestration layer as the system grows.
+
+---
+
+# Summary
+
+Wiki Market Radar is designed to answer a practical question:
+
+> **Where does Wikipedia data show meaningful and sufficiently reliable information interest that deserves deeper product validation?**
+
+The Skill does not attempt to prove product demand from Wikipedia alone.
+
+Instead, it turns a natural-language research question into a reproducible data workflow, calculates the relevant metrics deterministically, communicates the main differences clearly, and produces a compact report that can be used as the starting point for the next research decision.
